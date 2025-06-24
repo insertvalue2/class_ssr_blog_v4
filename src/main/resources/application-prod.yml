@@ -4,3 +4,13 @@ server:
       charset: utf-8
       force: true
   port: 5000
+
+
+# 2칸 공백, 탭키 절대 사용 금지!
+# 로그 설정 (개발환경용)
+# 로그 레벨의 개념
+# ERROR > WARN > INFO > DEBUG > TRACE
+logging:
+  level:
+    root: INFO
+    com.tenco.blog: DEBUG          # 개발 시 모든 로그 확인

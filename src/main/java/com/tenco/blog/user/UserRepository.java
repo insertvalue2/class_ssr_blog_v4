@@ -1,43 +1,32 @@
 package com.tenco.blog.user;
 
+
+import com.tenco.blog._core.errors.exception.Exception404;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Repository
 public class UserRepository {
+
+    private static final Logger log = LoggerFactory.getLogger(UserRepository.class);
+
     private final EntityManager em;
 
-    // Dirty Checking을 활용한 회원정보 수정
+    // JPA 영속화를 통한 회원가입
     @Transactional
-    public User updateById(Long id, UserRequest.UpdateDTO reqDTO) {
-        // 1. 수정할 사용자를 영속 상태로 조회
-        User user = findById(id);  // 영속성 컨텍스트에서 관리되는 엔티티
+    public User save(User user) {
+        log.info("회원가입 처리 시작 - 사용자명: {}", user.getUsername());
 
-        System.out.println("=== 회원정보 수정 시작 ===");
-        System.out.println("수정 대상: " + user.getUsername());
-        System.out.println("수정 전 이메일: " + user.getEmail());
+        // 비영속 상태의 User 엔티티를 영속성 컨텍스트에 저장
+        em.persist(user);
 
-        // 2. 영속 상태 엔티티의 값 변경 (Dirty Checking 시작)
-        // user.setPassword(reqDTO.getPassword());
-        user.update(reqDTO);
-
-        System.out.println("=== 엔티티 값 변경 완료 ===");
-        System.out.println("수정 후 비밀번호 확인 : " + user.getPassword());
-
-        // 3. persist() 호출 불필요!
-        // 트랜잭션 커밋 시점에 영속성 컨텍스트가 자동으로 변경 감지
-        // 변경된 필드만 UPDATE 쿼리 자동 생성 및 실행
-
-        // 4. 수정된 영속 엔티티 반환 (세션 동기화용)
+        log.info("회원가입 영속화 완료 - ID: {}, 사용자명: {}", user.getId(), user.getUsername());
         return user;
-
-        // 세션 동기화가 중요한 이유:
-        // 회원정보가 수정되었는데 세션 정보가 옛날 것이면
-        // 사용자는 여전히 옛날 정보를 보게 됨
     }
 
     // 회원정보 조회: 수정 폼용
@@ -45,60 +34,65 @@ public class UserRepository {
         User user = em.find(User.class, id);
 
         if (user == null) {
-            throw new RuntimeException("사용자를 찾을 수 없습니다. ID: " + id);
+            log.warn("존재하지 않는 사용자 조회 시도 - ID: {}", id);
+            throw new Exception404("사용자를 찾을 수 없습니다. ID: " + id);
         }
 
-        System.out.println("=== 회원정보 조회 ===");
-        System.out.println("조회된 사용자: " + user.getUsername());
-        System.out.println("이메일: " + user.getEmail());
-
+        log.debug("사용자 조회 완료 - ID: {}, 사용자명: {}", user.getId(), user.getUsername());
         return user;
     }
 
+    // Dirty Checking을 활용한 회원정보 수정
+    @Transactional
+    public User updateById(Long id, UserRequest.UpdateDTO reqDTO) {
+        log.info("회원정보 수정 시작 - 사용자 ID: {}", id);
 
+        // 1. 수정할 사용자를 영속 상태로 조회 (Exception404 자동 처리)
+        User user = findById(id);
 
-    // 로그인용 사용자 조회: 사용자명과 비밀번호로 검증
+        log.info("수정 전 정보 - 사용자명: {}, 이메일: {}", user.getUsername(), user.getEmail());
+
+        // 2. 영속 상태 엔티티의 값 변경 (Dirty Checking 시작)
+        user.update(reqDTO);
+
+        log.info("수정 후 정보 - 사용자명: {}, 이메일: {}", user.getUsername(), user.getEmail());
+        log.info("회원정보 수정 완료 - 사용자 ID: {}", id);
+
+        // 수정된 영속 엔티티 반환 (세션 동기화용)
+        return user;
+    }
+
+    // 로그인용 사용자 조회
     public User findByUsernameAndPassword(String username, String password) {
         try {
-            // JPQL로 사용자명과 비밀번호가 일치하는 사용자 조회
             String jpql = "SELECT u FROM User u WHERE u.username = :username AND u.password = :password";
+            User user = em.createQuery(jpql, User.class)
+                    .setParameter("username", username)
+                    .setParameter("password", password)
+                    .getSingleResult();
 
-            Query query = em.createQuery(jpql, User.class);
-            query.setParameter("username", username);
-            query.setParameter("password", password);
-
-            return (User) query.getSingleResult();
+            log.info("로그인 인증 성공 - 사용자명: {}", username);
+            return user;
 
         } catch (Exception e) {
-            // 일치하는 사용자가 없거나 에러 발생 시 null 반환
-            // 로그인 실패를 의미함
+            log.warn("로그인 인증 실패 - 사용자명: {}", username);
             return null;
         }
-    }
-
-
-    // 회원가입: User 엔티티 영속화
-    @Transactional
-    public User save(User user) {
-        // 비영속 상태의 User 엔티티를 영속성 컨텍스트에 저장
-        // 영속성 컨텍스트가 user 객체를 관리하기 시작
-        em.persist(user);
-
-        // persist() 후 user 객체는 영속 상태가 됨
-        // 트랜잭션 커밋 시점에 실제 INSERT 쿼리 실행
-        // 자동 생성된 ID와 생성시간이 user 객체에 설정됨
-        return user;
     }
 
     // 사용자명 중복 체크용 조회 메서드
     public User findByUsername(String username) {
         try {
             String jpql = "SELECT u FROM User u WHERE u.username = :username";
-            return em.createQuery(jpql, User.class)
+            User user = em.createQuery(jpql, User.class)
                     .setParameter("username", username)
                     .getSingleResult();
+
+            log.debug("사용자명 조회 성공 - 사용자명: {}", username);
+            return user;
+
         } catch (Exception e) {
-            // 사용자를 찾을 수 없는 경우 null 반환
+            log.debug("사용자명 조회 결과 없음 - 사용자명: {}", username);
             return null;
         }
     }

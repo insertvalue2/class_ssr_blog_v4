@@ -11,8 +11,9 @@ server:
 # ERROR > WARN > INFO > DEBUG > TRACE
 logging:
   level:
-    root: INFO           # 모든 라이브러리는 INFO 이상만 출력
-    com.example: DEBUG   # 내 프로젝트는 DEBUG 이상 모두 출력
+    root: INFO
+    com.tenco.blog: DEBUG          # 개발 시 모든 로그 확인
+    #com.tenco.blog.user: INFO   # User 패키지만 INFO (선택사항)
 
 spring:
   # Mustache 템플릿 엔진 설정
