@@ -1,6 +1,5 @@
 package com.tenco.blog.board;
 
-import com.tenco.blog._core.errors.exception.Exception401;
 import com.tenco.blog._core.errors.exception.Exception403;
 import com.tenco.blog.user.User;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,21 +28,15 @@ public class BoardController {
 
         log.info("게시글 수정 폼 요청 - ID: {}", id);
 
-        // 1. 로그인 체크: 로그인하지 않은 사용자는 수정 불가
         User sessionUser = (User) session.getAttribute("sessionUser");
-        if (sessionUser == null) {
-            log.warn("비로그인 사용자의 게시글 수정 폼 접근 시도 - 게시글 ID: {}", id);
-            // @ControllerAdvice에서 401 에러 페이지 처리됨
-            throw new Exception401("로그인이 필요한 서비스입니다. 먼저 로그인해주세요.");
-        }
 
-        // 2. 수정할 게시글 조회 (Exception404 자동 처리됨)
+        // 수정할 게시글 조회 (Exception404 자동 처리됨)
         Board board = boardRepository.findById(id);
 
         log.info("게시글 수정 폼 조회 - 제목: {}, 작성자: {}, 요청자: {}",
                 board.getTitle(), board.getUser().getUsername(), sessionUser.getUsername());
 
-        // 3. 권한 체크: 본인이 작성한 게시글만 수정 가능
+        // 권한 체크: 본인이 작성한 게시글만 수정 가능
         if (!board.isOwner(sessionUser.getId())) {
             log.warn("게시글 수정 권한 없음 - 게시글 ID: {}, 작성자: {}, 요청자: {}",
                     id, board.getUser().getUsername(), sessionUser.getUsername());
@@ -51,7 +44,7 @@ public class BoardController {
             throw new Exception403("본인이 작성한 게시글만 수정할 수 있습니다.");
         }
 
-        // 4. 수정 폼에 기존 데이터 전달 (미리 채우기용)
+        // 수정 폼에 기존 데이터 전달 (미리 채우기용)
         request.setAttribute("board", board);
 
         log.info("게시글 수정 폼 페이지 이동 완료");
@@ -65,17 +58,12 @@ public class BoardController {
 
         log.info("게시글 수정 요청 - ID: {}, 새 제목: {}", id, reqDTO.getTitle());
 
-        // 1. 로그인 체크
         User sessionUser = (User) session.getAttribute("sessionUser");
-        if (sessionUser == null) {
-            log.warn("비로그인 사용자의 게시글 수정 시도 - 게시글 ID: {}", id);
-            throw new Exception401("로그인이 필요한 서비스입니다.");
-        }
 
-        // 2. 입력 데이터 검증 (Exception400 자동 처리됨)
+        // 입력 데이터 검증 (Exception400 자동 처리됨)
         reqDTO.validate();
 
-        // 3. 권한 체크를 위해 게시글 조회
+        // 권한 체크를 위해 게시글 조회
         Board board = boardRepository.findById(id);
 
         if (!board.isOwner(sessionUser.getId())) {
@@ -83,12 +71,12 @@ public class BoardController {
             throw new Exception403("본인이 작성한 게시글만 수정할 수 있습니다.");
         }
 
-        // 4. Dirty Checking을 통한 수정 실행
+        // Dirty Checking을 통한 수정 실행
         Board updatedBoard = boardRepository.updateById(id, reqDTO);
 
         log.info("게시글 수정 완료 - ID: {}, 제목: {}", updatedBoard.getId(), updatedBoard.getTitle());
 
-        // 5. 수정 완료 후 해당 게시글 상세보기 페이지로 리다이렉트
+        // 수정 완료 후 해당 게시글 상세보기 페이지로 리다이렉트
         // PRG 패턴 적용으로 중복 수정 방지
         return "redirect:/board/" + id;
     }
@@ -99,31 +87,26 @@ public class BoardController {
 
         log.info("게시글 삭제 요청 - ID: {}", id);
 
-        // 1. 로그인 체크: 로그인하지 않은 사용자는 삭제 불가
         User sessionUser = (User) session.getAttribute("sessionUser");
-        if (sessionUser == null) {
-            log.warn("비로그인 사용자의 게시글 삭제 시도 - 게시글 ID: {}", id);
-            throw new Exception401("로그인이 필요한 서비스입니다.");
-        }
 
-        // 2. 삭제할 게시글 조회 (권한 체크를 위해)
+        // 삭제할 게시글 조회 (권한 체크를 위해)
         Board board = boardRepository.findById(id);
 
         log.info("삭제 대상 게시글 - 제목: {}, 작성자: {}, 요청자: {}",
                 board.getTitle(), board.getUser().getUsername(), sessionUser.getUsername());
 
-        // 3. 권한 체크: 본인이 작성한 게시글만 삭제 가능
+        // 권한 체크: 본인이 작성한 게시글만 삭제 가능
         if (!board.isOwner(sessionUser.getId())) {
             log.warn("게시글 삭제 권한 없음 - 게시글 ID: {}, 요청자: {}", id, sessionUser.getUsername());
             throw new Exception403("본인이 작성한 게시글만 삭제할 수 있습니다.");
         }
 
-        // 4. 권한 확인 완료 후 삭제 실행
+        // 권한 확인 완료 후 삭제 실행
         boardRepository.deleteById(id);
 
         log.info("게시글 삭제 완료 - ID: {}", id);
 
-        // 5. 삭제 성공 시 메인 페이지로 리다이렉트
+        // 삭제 성공 시 메인 페이지로 리다이렉트
         return "redirect:/";
     }
 
@@ -133,14 +116,6 @@ public class BoardController {
 
         log.info("게시글 작성 폼 요청");
 
-        // 로그인 체크: 로그인하지 않은 사용자는 게시글 작성 불가
-        User sessionUser = (User) session.getAttribute("sessionUser");
-        if (sessionUser == null) {
-            log.warn("비로그인 사용자의 게시글 작성 폼 접근 시도");
-            throw new Exception401("글을 작성하려면 먼저 로그인해주세요.");
-        }
-
-        log.info("게시글 작성 폼 페이지 이동 - 사용자: {}", sessionUser.getUsername());
         return "board/save-form";
     }
 
@@ -150,29 +125,23 @@ public class BoardController {
 
         log.info("게시글 저장 요청 - 제목: {}", reqDTO.getTitle());
 
-        // 1. 세션에서 로그인한 사용자 정보 가져오기
+        // 세션에서 로그인한 사용자 정보 가져오기
         User sessionUser = (User) session.getAttribute("sessionUser");
 
-        // 2. 로그인 체크
-        if (sessionUser == null) {
-            log.warn("비로그인 사용자의 게시글 저장 시도");
-            throw new Exception401("글을 작성하려면 먼저 로그인해주세요.");
-        }
-
-        // 3. 입력 데이터 검증 (Exception400 자동 처리됨)
+        // 입력 데이터 검증 (Exception400 자동 처리됨)
         reqDTO.validate();
 
-        // 4. DTO를 Entity로 변환 (로그인한 사용자 정보 포함)
+        // DTO를 Entity로 변환 (로그인한 사용자 정보 포함)
         Board board = reqDTO.toEntity(sessionUser);
 
         log.info("Board 엔티티 생성 완료 - 작성자: {}", board.getUser().getUsername());
 
-        // 5. Board 엔티티 영속화 (User와의 연관관계 포함)
+        // Board 엔티티 영속화 (User와의 연관관계 포함)
         Board savedBoard = boardRepository.save(board);
 
         log.info("게시글 저장 완료 - ID: {}, 제목: {}", savedBoard.getId(), savedBoard.getTitle());
 
-        // 6. 저장 성공 시 메인 페이지로 리다이렉트
+        // 저장 성공 시 메인 페이지로 리다이렉트
         return "redirect:/";
     }
 
@@ -182,12 +151,12 @@ public class BoardController {
 
         log.info("메인 페이지 요청");
 
-        // 1. 게시글 목록 조회
+        // 게시글 목록 조회
         List<Board> boardList = boardRepository.findAll();
 
         log.info("게시글 목록 조회 완료 - 총 {}개", boardList.size());
 
-        // 2. 뷰에 데이터 전달
+        // 뷰에 데이터 전달
         request.setAttribute("boardList", boardList);
 
         return "index";
@@ -199,14 +168,14 @@ public class BoardController {
 
         log.info("게시글 상세보기 요청 - ID: {}", id);
 
-        // 1. 게시글 조회 (User 연관관계 포함)
+        // 게시글 조회 (User 연관관계 포함)
         // Exception404 자동 처리됨
         Board board = boardRepository.findById(id);
 
         log.info("게시글 상세보기 조회 완료 - 제목: {}, 작성자: {}",
                 board.getTitle(), board.getUser().getUsername());
 
-        // 2. 뷰에 데이터 전달
+        // 뷰에 데이터 전달
         request.setAttribute("board", board);
 
         return "board/detail";
