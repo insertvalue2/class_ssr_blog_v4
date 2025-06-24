@@ -78,7 +78,7 @@ public class UserController {
         log.info("세션 동기화 완료 - 사용자: {}", updatedUser.getUsername());
 
         // 5. 수정 완료 후 메인 페이지로 리다이렉트
-        return "redirect:/?success=update";
+        return "redirect:/";
     }
 
     // 로그인 폼 페이지
@@ -117,6 +117,8 @@ public class UserController {
                 sessionUser.getUsername(), session.getId());
 
         // 5. 메인 페이지로 리다이렉트
+        // (HTTP 헤더는 ASCII만 허용)
+        // 공백은 URL에서 유효하지 않음
         return "redirect:/";
     }
 
@@ -179,6 +181,6 @@ public class UserController {
                 savedUser.getId(), savedUser.getUsername(), savedUser.getCreatedAt());
 
         // 5. 회원가입 성공 시 로그인 페이지로 리다이렉트
-        return "redirect:/login-form?success=join";
+        return "redirect:/login-form";
     }
 }
