@@ -1,0 +1,49 @@
+{{> layout/header}}
+
+<div class="container p-5">
+
+    <!--
+    {{!boardList}}: boardList 컬렉션을 반복 처리
+    영속성 컨텍스트에서 관리되는 Board 엔티티들을 순회
+    -->
+    {{#boardList}}
+        <div class="card mb-3">
+            <div class="card-body">
+                <!--
+                {{! title}}: Board 엔티티의 getTitle() 메서드 자동 호출
+                영속 상태 엔티티이므로 모든 필드에 안전하게 접근 가능
+                -->
+                <h4 class="card-title mb-3">{{title}}</h4>
+
+                <p class="text-muted">
+                    작성자: {{user.username}} | 작성일: {{time}}
+                </p>
+
+                <!--
+                {{! id}}: Board 엔티티의 getId() 메서드 호출
+                영속성 컨텍스트가 자동 생성한 ID 값 사용
+                -->
+                <a href="/board/{{id}}" class="btn btn-primary">상세보기</a>
+            </div>
+        </div>
+    {{/boardList}}
+
+    <!-- 게시글이 없는 경우 표시 -->
+    {{^boardList}}
+        <div class="text-center mt-5">
+            <h5>등록된 게시글이 없습니다</h5>
+            <p class="text-muted">첫 번째 게시글을 작성해보세요!</p>
+            <a href="/board/save-form" class="btn btn-primary">새글쓰기</a>
+        </div>
+    {{/boardList}}
+
+
+    <!-- 페이지네이션 (추후 구현 예정) -->
+    <ul class="pagination d-flex justify-content-center">
+        <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+        <li class="page-item"><a class="page-link" href="#">Next</a></li>
+    </ul>
+
+</div>
+
+{{> layout/footer}}

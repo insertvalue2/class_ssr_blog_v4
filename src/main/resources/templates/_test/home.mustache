@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<!-- header.mustache 에서 properties 에서 suffix 설정으로 .mustache  생략 -->
+{{> test/header}}
+<br><br>
+<h1>{{title}}</h1>
+<p>{{welcomeMessage}}</p>
+<ul>
+    {{#posts}}
+        <li>{{.}}</li>
+    {{/posts}}
+    {{^emptyPosts}}
+        <li>빈 리스트입니다.</li>
+    {{/emptyPosts}}
+</ul>
+</body>
+</html>
